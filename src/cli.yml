@@ -1,0 +1,26 @@
+name: roots_importer
+version: "0.1.0"
+author: "German Lashevich <german.lashevich@gmail.com>"
+about: Does awesome things
+args:
+  - connection-string:
+      short: c
+      long: connection-string
+      value_name: STRING
+      help: Sets postgres connection string
+      default_value: "host='localhost' dbname='ruwordnet' user='ruwordnet' password='ruwordnet'"
+      takes_value: true
+  - quality:
+      short: q
+      long: quality
+      required: true
+      takes_value: true
+      possible_values:
+        - manual
+        - inferred
+      value_name: QUALITY
+      help: Sets data quality
+  - INPUT:
+      help: Sets the input file to read roots from
+      required: true
+      index: 1
