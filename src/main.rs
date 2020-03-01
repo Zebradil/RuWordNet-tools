@@ -35,7 +35,10 @@ fn main() {
         .prepare("INSERT INTO roots (word, root, index, quality) VALUES ($1, $2, $3, $4)")
         .unwrap();
     for line in reader.lines() {
-        for root in get_roots_from_string(line.unwrap().trim()) {
+        let line = line.unwrap();
+        let line = line.trim();
+        info!("{}", line);
+        for root in get_roots_from_string(line) {
             match client.execute(
                 &insert,
                 &[&root.word, &root.root, &(root.index as i32), &quality],
