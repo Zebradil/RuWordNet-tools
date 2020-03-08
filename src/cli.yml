@@ -18,8 +18,20 @@ args:
       possible_values:
         - manual
         - inferred
+        - louk
       value_name: QUALITY
-      help: Sets data quality
+      help: Identifies source of data
+  - kind:
+      short: k
+      long: kind
+      required: false
+      default_value: morphemes
+      takes_value: true
+      possible_values:
+        - morphemes
+        - psql
+      value_name: TYPE
+      help: Identifies input format
   - INPUT:
       help: Sets the input file to read roots from
       required: true

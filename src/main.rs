@@ -15,7 +15,7 @@ use std::io::{BufRead, BufReader};
 struct Root {
     word: String,
     root: String,
-    index: usize, // can be >0 for words with multiple roots
+    index: isize, // can be >0 for words with multiple roots
 }
 
 fn main() {
@@ -25,6 +25,7 @@ fn main() {
     let connection_string = matches.value_of("connection-string").unwrap();
     let input_file = matches.value_of("INPUT").unwrap();
     let quality = matches.value_of("quality").unwrap();
+    let kind = matches.value_of("kind").unwrap();
 
     let mut client =
         Client::connect(&connection_string, NoTls).expect("Cannot connect to the database");
@@ -35,10 +36,11 @@ fn main() {
         .prepare("INSERT INTO roots (word, root, index, quality) VALUES ($1, $2, $3, $4)")
         .unwrap();
     for line in reader.lines() {
+        // TODO handle non-UTF8 (for example, panics on CP1251)
         let line = line.unwrap();
         let line = line.trim();
         info!("{}", line);
-        for root in get_roots_from_string(line) {
+        for root in get_roots_from_string(line, kind) {
             match client.execute(
                 &insert,
                 &[&root.word, &root.root, &(root.index as i32), &quality],
@@ -57,7 +59,15 @@ fn main() {
     }
 }
 
-fn get_roots_from_string(string: &str) -> Vec<Root> {
+fn get_roots_from_string(string: &str, kind: &str) -> Vec<Root> {
+    match kind {
+        "morphemes" => get_roots_from_morpheme_string(string),
+        "psql" => get_roots_from_psql_string(string),
+        &_ => unreachable!("kind must be set either to 'morphemes' or to 'psql'"),
+    }
+}
+
+fn get_roots_from_morpheme_string(string: &str) -> Vec<Root> {
     let mut vec = Vec::new();
     let parts: Vec<&str> = string.split('\t').collect();
     let word = parts[0];
@@ -77,9 +87,24 @@ fn get_roots_from_string(string: &str) -> Vec<Root> {
             vec.push(Root {
                 word: word.to_owned(),
                 root: root.to_owned(),
-                index,
+                index: index as isize,
             })
         });
+    vec
+}
+
+fn get_roots_from_psql_string(string: &str) -> Vec<Root> {
+    let mut vec = Vec::new();
+    let parts: Vec<&str> = string.split('|').collect();
+    let roots = parts[0].trim();
+    let words = parts[1].trim().trim_matches('{').trim_matches('}');
+    words.split(',').for_each(|word| {
+        vec.push(Root {
+            word: word.to_owned(),
+            root: roots.to_owned(),
+            index: -1,
+        })
+    });
     vec
 }
 
